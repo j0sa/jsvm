@@ -3,4 +3,4 @@ CC_FLAGS = -Wall -Wextra -g -std=c11
 CC = clang
 
 all:
-	${CC} ${SRC_FILES} ${CC_FlAGS} -o output
+	${CC} ${SRC_FILES} ${CC_FlAGS} -o jsvm
