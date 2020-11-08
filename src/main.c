@@ -2,23 +2,35 @@
 #include <stdbool.h>
 #include <stdlib.h>
 
-#define STACK_SIZE 256 static int stack[STACK_SIZE];
+#define STACK_SIZE 256
+static int stack[STACK_SIZE];
 
 typedef enum {
-	PSH,
-	ADD,
-	POP,
-	SET,
-	HLT
-} InstructionSet;
+    HLT, // 0  -- hlt              :: halts program
+    PSH, // 1  -- psh val          :: pushes <val> to stack
+    POP, // 2  -- pop              :: pops value from stack
+    ADD, // 3  -- add              :: adds top two vals on stack
+    MUL, // 4  -- mul              :: multiplies top two vals on stack
+    DIV, // 5  -- div              :: divides top two vals on stack
+    SUB, // 6  -- sub              :: subtracts top two vals on stack
+    SLT, // 7  -- slt reg_a, reg_b :: pushes (reg_a < reg_b) to stack
+    MOV, // 8  -- mov reg_a, reg_b :: movs the value in reg_a to reg_b
+    SET, // 9  -- set reg, val     :: sets the reg to value
+    LOG, // 10 -- log a            :: prints out a
+    IF,  // 11 -- if reg val ip    :: if the register == val branch to the ip
+    IFN, // 12 -- ifn reg val ip   :: if the register != val branch to the ip
+    GLD, // 13 -- gld reg          :: loads a register to the stack
+    GPT, // 14 -- gpt reg          :: pushes top of stack to the given register
+    NOP  // 15 -- nop              :: nothing
+} Instructions;
 
 typedef enum {
-	A, B, C, D, E, F, I, J,
-	EX,
-	EXA,
-	IP,
-	SP,
-	REGISTER_SIZE
+    A, B, C, D, E, F, I, J, // GENERAL PURPOSE
+    EX,                     // EXCESS
+    EXA,                    // MORE EXCESS
+    IP,                     // INSTRUCTION POINTER
+    SP,                     // STACK POINTER
+    REGISTER_SIZE
 } Registers;
 
 static int registers[REGISTER_SIZE];
@@ -39,49 +51,59 @@ bool is_jmp = false;
 #define FETCH (instructions[IP])
 
 void print_stack() {
-	for (int i = 0; i < SP; i++) {
-		printf("0x%04d ", stack[i]);
-		if ((i + 1) % 4 == 0) { printf("\n"); }	
-	}
-	if (SP != 0) { printf("\n"); }
+    for (int i = 0; i < SP; i++) {
+        printf("0x%04d ", stack[i]);
+        if ((i + 1) % 4 == 0) { printf("\n"); }
+    }
+    if (SP != 0) { printf("\n"); }
 }
 
 void print_registers() {
-	printf("Register Dump:\n");
-	for (int i = 0; i < REGISTER_SIZE; i++) {
-		if (i != registers[EX] && i != registers[EXA]) { return i; }
-	}
-	return EX;
+    printf("Register Dump:\n");
+    for (int i = 0; i < REGISTER_SIZE; i++) {
+        printf("%04d ", registers[i]);
+        if ((i + 1) % 4 == 0) { printf("\n"); }
+    }
+}
+
+int find_empty_register() {
+    for (int i = 0; i < REGISTER_SIZE; i++) {
+        if (i != registers[EX] && i != registers[EXA]) { return i; }
+    }
+    return EX;
 }
 
 void eval(int instr) {
-	is_jmp = false;
-	switch (instr) {
-		case HLT: {
-			running = false;
-			printf("Finished Execution\n");
-			break;
-		}
-		case PSH: {
-			SP = SP + 1;
-			IP = IP + 1;
-			stack[SP] = instructions[IP];
-			break;
-		}
-		case ADD: {
-			registers[A] stack[SP];
-			SP = SP - 1;
+    is_jmp = false;
+    switch (instr) {
+        case HLT: {
+            running = false;
+            printf("Finished Execution\n");
+            break;
+        }
+        case PSH: {
+            SP = SP + 1;
+            IP = IP + 1;
+            stack[SP] = instructions[IP];
+            break;
+        }
+        case POP: {
+            SP = SP - 1;
+            break;
+        }
+        case ADD: {
+            registers[A] = stack[SP];
+            SP = SP - 1;
 
-			registers[B] = stack[SP];
+            registers[B] = stack[SP];
 
-			registers[C] = registers[B] + registers[A];
+            registers[C] = registers[B] + registers[A];
 
-			stack[SP] = registers[C];
-
-			printf("%d + %d = %d\n", registers[B], registers[A], registers[C]);
-			break;
-		}
-		case MUL: {
+            stack[SP] = registers[C];
+            printf("%d + %d = %d\n", registers[B], registers[A], registers[C]);
+            break;
+        }
+        case MUL: {
             registers[A] = stack[SP];
             SP = SP - 1;
 
